@@ -1,8 +1,9 @@
-#ed==========================================================
+#ed
 # View large data frame using without printing the data to command line
 ed <- function(x) invisible(edit(x))
 
-#printSummary================================================
+
+#printSummary
 # Print summary stats of a data frame variable aggregated by n factors. Uses a formula interface
 #==Improved printSummary, Fall 2011
 printSummary <- function(d.name, myFormula, useLog="FALSE") {
@@ -75,3 +76,22 @@ print(cbind(len, m[ncol(m)], std[ncol(std)], sem, CI95, med[ncol(med)], medSD[nc
 
     # return(data2)  
 # } 
+
+
+#catData
+catData <- function(filenames,path,pattern='*dCorr.txt') {
+  #Read in and concatenate datasets to dataframe
+  #dCorr <- catData(filenames,path,pattern='*dCorr.txt')
+  
+  for(i in 1:length(filenames)) {
+    pathname <- file.path(path,filenames[i])
+    fnm <- Sys.glob(file.path(pathname, pattern))
+    if (i == 1) {
+      data <- read.delim(fnm)
+    } else {
+      df <- read.delim(fnm)
+      data <- rbind(data,df)
+    }
+  }
+  return(data)
+}
