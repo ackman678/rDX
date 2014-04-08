@@ -47,6 +47,33 @@ printSummary <- function(data=NULL, measVar, groupVars=NULL, na.rm=FALSE,
 } 
 
 
+printSummaryPlus <- function(data=NULL, measVar, groupVars=NULL, na.rm=FALSE,
+                      conf.interval=.95, .drop=TRUE, makePlots=TRUE) {  
+	data2 <- printSummary(data, measVar,groupVars,na.rm,conf.interval, .drop)     
+	fmla <- as.formula(paste(paste(measVar, collapse= "+"), "~", paste(groupVars, collapse= "*")))
+	lm.fit <- lm(fmla,data)
+	
+	if (makePlots==TRUE) {
+		dev.new();
+		opar <- par(mfrow=c(2,2))
+		plot(lm.fit)
+		par(opar)
+	}
+	
+	if (length(groupVars)==1) {	
+		if (length(levels(data[[groupVars]]))<3) {
+			data3 <- t.test(fmla,data=data)
+		} else {
+			data3 <- anova(lm.fit)
+		}
+	} else {
+		data3 <- anova(lm.fit)	
+	}
+	print(data2)
+	return(data3)
+}
+
+
 #catData
 catData <- function(filenames,path,pattern='*dCorr.txt') {
   #Read in and concatenate datasets to dataframe
@@ -64,4 +91,7 @@ catData <- function(filenames,path,pattern='*dCorr.txt') {
   }
   return(data)
 }
+
+#matlab jet colors lut
+jet.colors <- colorRampPalette(c("#00007F", "blue", "#007FFF", "cyan", "#7FFF7F", "yellow", "#FF7F00", "red", "#7F0000"))
 
