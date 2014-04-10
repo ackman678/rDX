@@ -48,15 +48,20 @@ printSummary <- function(data=NULL, measVar, groupVars=NULL, na.rm=FALSE,
 
 
 printSummaryPlus <- function(data=NULL, measVar, groupVars=NULL, na.rm=FALSE,
-                      conf.interval=.95, .drop=TRUE, makePlots=TRUE) {  
+                      conf.interval=.95, .drop=TRUE, makePlots=TRUE, groupInteraction=FALSE) {  
+	
+	if (groupInteraction==TRUE) { collapStr="*" } else { collapStr="+" }
+	data4=NULL
+	
 	data2 <- printSummary(data, measVar,groupVars,na.rm,conf.interval, .drop)     
-	fmla <- as.formula(paste(paste(measVar, collapse= "+"), "~", paste(groupVars, collapse= "*")))
+	fmla <- as.formula(paste(paste(measVar, collapse= "+"), "~", paste(groupVars, collapse= collapStr)))
 	lm.fit <- lm(fmla,data)
 	
 	if (makePlots==TRUE) {
 		dev.new();
 		opar <- par(mfrow=c(2,2))
 		plot(lm.fit)
+		title(main=as.character(as.expression(fmla)))
 		par(opar)
 	}
 	
@@ -64,13 +69,16 @@ printSummaryPlus <- function(data=NULL, measVar, groupVars=NULL, na.rm=FALSE,
 		if (length(levels(data[[groupVars]]))<3) {
 			data3 <- t.test(fmla,data=data)
 		} else {
-			data3 <- anova(lm.fit)
+			data3 <- anova(lm.fit)			
+			data4 <- with(data,pairwise.t.test(eval(parse(text=measVar)),eval(parse(text=paste0(groupVars, collapse=":")))))
 		}
 	} else {
-		data3 <- anova(lm.fit)	
+		data3 <- anova(lm.fit)
+		data4 <- with(data,pairwise.t.test(eval(parse(text=measVar)),eval(parse(text=paste0(groupVars, collapse=":")))))
 	}
 	print(data2)
-	return(data3)
+	print(data3)
+	if (!is.null(data4)) { print(data4) }
 }
 
 
