@@ -83,12 +83,12 @@ printSummaryPlus <- function(data=NULL, measVar, groupVars=NULL, na.rm=FALSE,
 
 
 #catData
-catData <- function(filenames,path,pattern='*dCorr.txt') {
+catData <- function(subfolders,path,pattern='*dCorr.txt') {
   #Read in and concatenate datasets to dataframe
   #dCorr <- catData(filenames,path,pattern='*dCorr.txt')
   
-  for(i in 1:length(filenames)) {
-    pathname <- file.path(path,filenames[i])
+  for(i in 1:length(subfolders)) {
+    pathname <- file.path(path,subfolders[i])
     fnm <- Sys.glob(file.path(pathname, pattern))
     if (i == 1) {
       data <- read.delim(fnm)

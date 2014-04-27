@@ -86,22 +86,45 @@ moduleOrder <- V(g)$color
 names(moduleOrder) <- V(g)$name
 moduleColors <- moduleOrder
 
+mNamesList <- list()
 for(i in 1:nModules) {
-cInd=moduleOrder[which(names(moduleOrder)==matchOrder[i])]
-if (length(cInd>0)) {
-ind2ch=which(moduleOrder==cInd)
-moduleColors[ind2ch] = i 
-} else { print('module match string not found!') }
+mNamesList[[i]] <- names(which(moduleOrder == i))
+}
+
+j=length(matchOrder)
+for (i in 1:length(mNamesList)) {
+for (k in 1:length(matchOrder)) {
+nInd <- mNamesList[[i]][mNamesList[[i]]==matchOrder[k]]
+if (length(nInd>0)) {
+# print(paste(i, 'was ', nInd, 'but now will be ', k))
+break 
+}
+}
+
+if (length(nInd>0)) {
+print(paste(nInd, 'was ', i, 'but now will be ', k, 'as will ', paste0(mNamesList[[i]],collapse=" ")))
+moduleColors[which(!is.na(match(names(moduleOrder),mNamesList[[i]])))] <- k
+} else {
+j=j+1
+print(paste(paste0(mNamesList[[i]],collapse=" "), 'was ', i, 'but now will be ', j))
+moduleColors[which(!is.na(match(names(moduleOrder),mNamesList[[i]])))] <- j
+}
 }
 return(moduleColors)
 }
 
-myForceGraph <- function(g, lo=NULL) {
+myForceGraph <- function(g, lo=NULL, dev=NULL) {
 ## g, graph object from igraph
-## lo, string. Graph layout type. e.g lo <-'layout.fruchterman.reingold', 'layout.kamada.kawai', 'layout.lgl'
+## lo, string. Graph layout type. e.g lo <-'layout.fruchterman.reingold', 'layout.kamada.kawai', 'layout.lgl', 'layout.auto'
+## dev, numeric. An existing device number if plotting should be passed to an open device window.
 
 if (is.null(lo)) { lo='layout.fruchterman.reingold' }
-quartz();
+if (is.null(dev)) { 
+dev.new() 
+} else {
+dev.set(dev)
+}
+
 # palette(rainbow(max(V(g)$color),alpha=0.5))
 mypalette <- adjustcolor(brewer.pal(max(V(g)$color),"Set1"),0.6)
 palette(mypalette)
