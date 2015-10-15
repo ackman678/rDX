@@ -3,10 +3,18 @@
 ed <- function(x) invisible(edit(x))
 
 
-#printSummary
-# A better print summary using plyr package 2014-03-19 10:37:09
-printSummary <- function(data=NULL, measVar, groupVars=NULL, na.rm=FALSE,
-                      conf.interval=.95, .drop=TRUE) {  
+mysave <- function(str="ggplot") {
+  #Save the current ggplot timestamped as a png and a pdf 
+  # Must have ggplot2 loaded
+  dateStr=format(Sys.time(),"%y%m%d-%H%M%S")    
+  ggsave(file=paste(dateStr, "-", str, ".pdf",sep=""))    
+  ggsave(file=paste(dateStr, "-", str, ".png",sep=""))
+}
+
+
+printSummary <- function(data=NULL, measVar, groupVars=NULL, na.rm=FALSE, conf.interval=.95, .drop=TRUE) {  
+  #printSummary
+  # A better print summary using plyr package 2014-03-19 10:37:09
 	#Inputs:
 	#data: dataframe, dataset to analyse
 	#measVar: character, name of measured variable in data
@@ -47,8 +55,7 @@ printSummary <- function(data=NULL, measVar, groupVars=NULL, na.rm=FALSE,
 } 
 
 
-printSummaryPlus <- function(data=NULL, measVar, groupVars=NULL, na.rm=FALSE,
-                      conf.interval=.95, .drop=TRUE, makePlots=TRUE, groupInteraction=FALSE) {  
+printSummaryPlus <- function(data=NULL, measVar, groupVars=NULL, na.rm=FALSE, conf.interval=.95, .drop=TRUE, makePlots=TRUE, groupInteraction=FALSE) {  
 	
 	if (groupInteraction==TRUE) { collapStr="*" } else { collapStr="+" }
 	data4=NULL
@@ -82,8 +89,9 @@ printSummaryPlus <- function(data=NULL, measVar, groupVars=NULL, na.rm=FALSE,
 }
 
 
-#catData
+
 catData <- function(subfolders,path,pattern='*dCorr.txt') {
+  #catData
   #Read in and concatenate datasets to dataframe
   #dCorr <- catData(filenames,path,pattern='*dCorr.txt')
   

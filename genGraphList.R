@@ -174,3 +174,103 @@ printGraphInfo <-  function(g, communityStructure) {
 }
 
 
+genNodeGraphDf <- function(gList, nshuffle=1000) {
+#Generate node:graph (filename) dataframe based on a gList returned from genGraphList
+#James B. Ackman 2015-04-21 17:10:59
+#dftmp <- genNodeGraphDf(gList)
+## gList, list of graphs returned from genGraphlist e.g. gList <- genGraphList(d3,"filename",c(0.1,0.15))
+## nshuffle, no. of shuffles of the degree sequence for the random graph comparisons
+
+## Make node:movie based dataset
+
+dftmp <- data.frame(node=character(), clusterCoeff=character(), degree=character(), nodeStrength=character(), btwCentr=character(), btwCentrN=character(), eigCentr=character(), pageRank=character(), gName=character(), age.g=character(), genotype=character(), animal=character(), manip=character(), manip.g=character(), filename=character(), modularity=character(), pathLength=character(), diam=character(), clusterCoeffGlobal=character(),  clusterCoeffGlobalNorm=character(), pathLengthNorm=character(), smallworldness=character(), plFitAlpha=character(), plFitAlphaRand=character(), nclusters=character(), module=character()) #make empty data.frame    
+for(i in 1:length(gList)) {    
+    gName <- names(gList)[[i]]    
+    mat <- get.adjacency(gList[[gName]],attr="rvalue")    
+    m2 <- as.matrix(mat)  #default R matrix     
+
+    eigCentr <- evcent(gList[[gName]])$vector
+    pageRank <- page.rank(gList[[gName]])$vector    
+    btwCentr <- betweenness(gList[[gName]])    
+    n = length(V(gList[[gName]])$name) #number of vertices
+    btwCentrN <- btwCentr/(n*(n-1))  #normalized to number of possible vertex connections as in [#Sporns:2005]
+
+    m <- data.frame( node=V(gList[[gName]])$name, clusterCoeff=transitivity(gList[[gName]],type="local"), degree=degree(gList[[gName]]), nodeStrength=colSums(m2), btwCentr=btwCentr, eigCentr=eigCentr, pageRank=pageRank, btwCentrN=btwCentrN, module=V(gList[[gName]])$color )    
+    m$gName <- as.factor(gName)    
+    m$age.g <- as.factor(levels(factor(E(gList[[gName]])$age.g)))    
+    m$filename <- as.factor(levels(factor(E(gList[[gName]])$filename)))  
+    m$genotype <- as.factor(levels(factor(E(gList[[gName]])$genotype)))  
+    m$manip <- as.factor(levels(factor(E(gList[[gName]])$manip)))  
+    m$manip.g <- as.factor(levels(factor(E(gList[[gName]])$manip.g)))  
+    m$animal <- as.factor(levels(factor(E(gList[[gName]])$animal)))  
+
+    fgCom<-fastgreedy.community(gList[[gName]],weights=E(gList[[gName]])$weight)  
+	m$modularity <- modularity(fgCom)   
+	m$nclusters <- length(fgCom)
+
+    print(gName)
+
+    diam <- diameter(gList[[gName]], weights=NA, unconnected=TRUE) #unconnected = TRUE (default) or FALSE  
+    lg <- average.path.length(gList[[gName]], unconnected=TRUE)  #unconnected = TRUE (default) or FALSE
+    cg <- transitivity(gList[[gName]], type="global", isolates="NaN") #isolates = "NaN" (default) or "zero"
+    deg <- degree(gList[[gName]])
+    fit1 <- power.law.fit(deg,8)  
+    m$plFitAlpha <- fit1$alpha
+    print(deg)
+    print(is.connected(gList[[gName]]))
+    res = rep(0,nshuffle)
+    cNorm = rep(0,nshuffle)
+    lNorm = rep(0,nshuffle)
+    cr = rep(0,nshuffle)
+    lr = rep(0,nshuffle)
+    ar = rep(0,nshuffle)
+
+    if(is.connected(gList[[gName]])) {
+        for(j in 1:nshuffle) {
+            g = degree.sequence.game(deg, method="vl")  #This randomizes the network, keeping the degree sequence (and number of nodes) intact.
+            lr[j] <- average.path.length(g)  
+            cr[j] <- transitivity(g, type="global", isolates="NaN") #isolates = "NaN" (default) or "zero"
+            fit1 <- power.law.fit(degree(g),8)
+            ar[j] <- fit1$alpha
+            cNorm[j] <- (cg/cr[j])
+            lNorm[j] <- (lg/lr[j]) 
+            res[j] <- cNorm[j]/lNorm[j] 
+        }
+        m$smallworldness = mean(res[res!=Inf])
+        m$clusterCoeffGlobalNorm = mean(cNorm[cNorm!=Inf])
+        m$pathLengthNorm = mean(lNorm)
+        m$clusterCoeffGlobalRand = mean(cr[cr!=Inf])
+        m$pathLengthRand = mean(lr)
+        m$plFitAlphaRand <- mean(ar)
+    } else {
+        m$smallworldness = NA
+        m$clusterCoeffGlobalNorm = NA
+        m$pathLengthNorm = NA
+        m$clusterCoeffGlobalRand = NA
+        m$pathLengthRand = NA
+        m$plFitAlphaRand <- NA
+        
+        #diam <- diam + length(which( V(gList[[gName]]) %in% unique(as.vector(get.edgelist(gList[[gName]]))) == FALSE))
+        # comps <- decompose.graph(gList[[gName]])
+        # cDiams <- sapply(comps, function(x) {diameter(x,weights=NA)})
+        # cDiams[cDiams == 0] <- 1
+        # diam <- sum(cDiams)
+        # clg <- sapply(comps, average.path.length)
+        # clg[is.na(clg)] <- 1
+        # lg <- sum(clg)
+    }
+	m$diam <- diam
+    m$pathLength <- lg
+    m$clusterCoeffGlobal <- cg
+    dftmp <- rbind(dftmp,m)    
+    #print(paste("smallworldness: ", mean(res[res!=Inf])))
+}    
+
+    dftmp$r <- as.factor(gsub("[0-9A-Za-z_]+.tif_","",dftmp$gName))    
+    rownames(dftmp) <- 1:nrow(dftmp)  
+
+    dftmp$nodeT <- dftmp$node  
+    levels(dftmp$nodeT) <- gsub("\\.[LR]","",levels(dftmp$nodeT)) 
+
+return(dftmp)
+}
